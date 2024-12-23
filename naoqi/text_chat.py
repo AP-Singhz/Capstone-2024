@@ -1,3 +1,4 @@
+
 import requests
 import json
 
@@ -23,6 +24,7 @@ def main():
     
     while True:
         user_input = raw_input("You: ") 
+        print("Debug: User input ->", user_input)  # Print the raw input text
         if user_input.lower() == "exit":
             print("Goodbye!")
             break
