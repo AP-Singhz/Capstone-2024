@@ -2,6 +2,45 @@ from naoqi import ALProxy
 import time
 import speech_recognition as sr
 from pydub import AudioSegment
+from rapidfuzz import fuzz
+
+
+WAKE_WORDS = ["hey nao","hello nao", "hey now","hello now" , "hello no", "hey no"]
+
+def detect_wake_word():
+    recognizer = sr.Recognizer()
+    mic = sr.Microphone()
+    try:
+        print("Adjusting for background noise...")
+        with mic as source:
+            recognizer.adjust_for_ambient_noise(source, duration=1.5)
+            print("Listening for wake word...")
+            audio = recognizer.listen(source, timeout=5)
+
+        recognized_text = recognizer.recognize_google(audio).lower()
+        print("Detected:{}" .format(recognized_text))
+
+        # Check exact matches first
+        if any(word in recognized_text for word in WAKE_WORDS):
+            print("Exact wake word match detected!")
+            return True
+
+        #Fuzzy match
+        for wake_word in WAKE_WORDS:
+            similarity = fuzz.partial_ratio(recognized_text, wake_word)
+            if similarity > 85: # Threshold similarity
+                print("Fuzzy wake word match: '{}' detected!".format(wake_word))
+                return True
+
+       # return any(word in recognized_text for word in WAKE_WORDS) # any() is a built in function that returns true if one of elements in iterable is true
+    except (sr.UnknownValueError):
+        print("No wake word detected.")
+    except sr.UnknownValueError:
+        print("Listening timed out.")
+    except Exception as e:
+         print("Error during wake word detection: {}".format(e))
+    return False
+
 
 def record_audio(ip, port, file_path, duration):
     """

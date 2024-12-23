@@ -5,6 +5,7 @@ from scp import SCPClient
 import speech_recognition as sr
 import wave
 import time
+from pydub import AudioSegment
 
 ROBOT_IP = "172.20.10.6"
 ROBOT_PORT = 9559
@@ -12,6 +13,7 @@ USERNAME = "nao"
 PASSWORD = "1234"
 
 REMOTE_FILE = "/home/nao/recordings/audio/speech.wav"
+CLEANED_FILE = "./cleaned_speech.wav"
 LOCAL_FILE = "./speech.wav"
 
 API_URL = "http://127.0.0.1:5000/chat" 
@@ -43,18 +45,17 @@ def detect_and_record_speech(audio_recorder, audio_device):
                 while is_recording:
                     rms = audio_device.getFrontMicEnergy()
                     if rms < RMS_THRESHOLD:
-                        silent_time += 1
+                        silent_time += 1 # increment slience timer
                     else:
                         silent_time = 0  
 
-                    if silent_time >= SILENCE_THRESHOLD:
+                    if silent_time >= SILENCE_THRESHOLD: #stops after slience threshold
                         print("Silence detected, stopping recording...")
                         audio_recorder.stopMicrophonesRecording()
                         is_recording = False
                         return  
 
-                    time.sleep(1)  
-
+                    time.sleep(1)  # check the mic energy every second
     except Exception as e:
         print("Error during recording:", e)
 
@@ -74,24 +75,82 @@ def transfer_file():
         print("Error during file transfer:", e)
 
 
-def transcribe_audio():
- 
+def preprocess_audio(input_file, output_file):
+    """Reduce noise and normalize the audio file."""
     try:
-        recognizer = sr.Recognizer()
+        print("Preprocessing audio...")
+        audio = AudioSegment.from_file(input_file)
+        audio = audio.set_frame_rate(16000).set_channels(1)  # Mono, 16kHz
+        audio.export(output_file, format="wav")
+        print("Preprocessed audio saved to:{}" .format(output_file))
+        return output_file
+    except Exception as e:
+        print("Error preprocessing audio: {}".format(e))
+        return None
 
-        with sr.AudioFile(LOCAL_FILE) as source:
+
+# def transcribe_audio():
+ 
+#     try:
+#         recognizer = sr.Recognizer()
+
+#         with sr.AudioFile(LOCAL_FILE) as source:
+#             audio_data = recognizer.record(source)
+
+#         print("Transcribing audio...")
+#         transcription = recognizer.recognize_google(audio_data)
+#         print("Transcription:", transcription)
+#         return transcription
+
+#     except sr.UnknownValueError:
+#         print("Could not understand the audio.")
+#         return None
+#     except sr.RequestError as e:
+#         print("Error with the speech recognition service:", e)
+#         return None
+
+
+# def transcribe_audio():
+#     recognizer = sr.Recognizer()
+#     preprocessed_file = preprocess_audio(LOCAL_FILE, CLEANED_FILE)
+#     if not preprocessed_file:
+#         return None
+#     try:
+#         with sr.AudioFile(preprocessed_file) as source:
+#             recognizer.adjust_for_ambient_noise(source)
+#             audio_data = recognizer.record(source)
+#         return recognizer.recognize_google(audio_data)
+#     except Exception as e:
+#         print(f"Error transcribing audio: {e}")
+#         return None
+
+
+def transcribe_audio():
+    """Transcribe the audio file located at LOCAL_FILE."""
+    recognizer = sr.Recognizer()
+
+    # Preprocess the audio file
+    preprocessed_file = preprocess_audio(LOCAL_FILE, CLEANED_FILE)
+    if not preprocessed_file:
+        print("Error preprocessing the audio file.")
+        return None
+
+    try:
+        with sr.AudioFile(preprocessed_file) as source:
+            recognizer.adjust_for_ambient_noise(source)  # Adjust threshold for ambient noise
             audio_data = recognizer.record(source)
-
         print("Transcribing audio...")
-        transcription = recognizer.recognize_google(audio_data)
-        print("Transcription:", transcription)
-        return transcription
-
+        text = recognizer.recognize_google(audio_data)
+        print("Transcription:{}" .format(text))
+        return text
     except sr.UnknownValueError:
-        print("Could not understand the audio.")
+        print("Speech recognition could not understand the audio.")
         return None
     except sr.RequestError as e:
-        print("Error with the speech recognition service:", e)
+        print("Error with the speech recognition service:{}" .format(e))
+        return None
+    except Exception as e:
+        print("Unexpected error during transcription:{}" .format(e))
         return None
 
 
