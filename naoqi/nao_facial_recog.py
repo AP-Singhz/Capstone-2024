@@ -120,7 +120,7 @@ def handle_recognition_results(results):
 
         #Process user response
         if user_res and user_res.lower() in ["yes","yeah","yup","sure","ok","okay","please","yeah sure","yes please","yes sure","yes okay","yeah okay"]:
-            tts.say("Great! Please look at the camera for registration.")
+            tts.say("Great! What is your name.")
             
             print("Listen for user's name...")
             detect_and_record_speech(audio_recorder=ALProxy("ALAudioRecorder",ROBOT_IP,ROBOT_PORT),
