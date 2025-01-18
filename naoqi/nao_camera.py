@@ -2,7 +2,7 @@ from naoqi import ALProxy
 import cv2
 import numpy as np
 
-ROBOT_IP = "192.168.1.10"  # Replace with your NAO robot's IP
+ROBOT_IP = "172.20.10.6"  # Replace with your NAO robot's IP
 ROBOT_PORT = 9559
 
 def show_camera_feed():

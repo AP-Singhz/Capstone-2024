@@ -4,10 +4,10 @@ from naoqi import ALProxy
 import requests
 from nao_transcribe import detect_and_record_speech, transcribe_audio,transfer_file
 # NAO Configuration
-ROBOT_IP = "192.168.1.10"  # Replace with your NAO robot's IP
+ROBOT_IP = "172.20.10.6"  # Replace with your NAO robot's IP
 ROBOT_PORT = 9559
 RESOLUTION = 2  # 640x480 resolution
-FRAME_RATE = 30
+FRAME_RATE = 60
 PYTHON3_API_URL = "http://127.0.0.1:5000"  # Python 3 Flask API URL
 
 # def stream_frames_and_recognize():
