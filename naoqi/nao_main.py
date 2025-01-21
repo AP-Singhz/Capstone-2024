@@ -26,7 +26,7 @@ def listen_for_wake_word():
     audio_recorder = ALProxy("ALAudioRecorder", ROBOT_IP, ROBOT_PORT)
     audio_device = ALProxy("ALAudioDevice",ROBOT_IP,ROBOT_PORT)
     audio_tts = ALProxy("ALTextToSpeech", ROBOT_IP, ROBOT_PORT)
-
+    audio_tts.setParameter("blockUntilSayFinished", True) # Ensure TTS(NAO) is finsihed speaking before proceding
     while True:
         # Step 1: Detect wake word
         if detect_wake_word():
@@ -144,7 +144,7 @@ if __name__ == "__main__":
 #     audio_recorder = ALProxy("ALAudioRecorder", ROBOT_IP, ROBOT_PORT)
 #     audio_device = ALProxy("ALAudioDevice",ROBOT_IP,ROBOT_PORT)
 #     audio_tts = ALProxy("ALTextToSpeech", ROBOT_IP, ROBOT_PORT)
-
+#     audio_tts.setParameter("blockUntilSayFinished", True) # Ensure TTS(NAO) is finsihed speaking before proceding
 #     while True:
 #         # Step 1: Detect wake word
 #         if detect_wake_word():
