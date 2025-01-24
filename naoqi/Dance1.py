@@ -24,36 +24,32 @@ def boogie():
     # Play the audio file
     file_id = audio.post.playFile(AUDIO_FILE_PATH)
 
-    for _ in range(6):  # Repeat 6 times
+    time.sleep(3)
+
+    for _ in range(5):  # Repeat 5 times
         set_joint_angles(
             ["RShoulderPitch", "LShoulderPitch", "HeadYaw"],
-            [-0.5, 1.0, -0.3],  # Raise right arm, lower left arm, head tilts left
-            0.5
+            [-0.4, 0.9, -0.3],  # Raise right arm, lower left arm, head tilts left
+            0.4
         )
-        time.sleep(0.5)
 
         set_joint_angles(
             ["RShoulderPitch", "LShoulderPitch", "HeadYaw"],
-            [1.0, -0.5, 0.3],  # Lower right arm, raise left arm, head tilts right
-            0.5
+            [0.9, -0.4, 0.3],  # Lower right arm, raise left arm, head tilts right
+            0.4
         )
-        time.sleep(0.5)
 
         set_joint_angles(
             ["HeadPitch"],
             [-0.2],  # Head nod forward
-            0.5
+            0.7
         )
-        time.sleep(0.5)
 
         set_joint_angles(
             ["HeadPitch"],
             [0.0],  # Head back to neutral
-            0.5
+            0.7
         )
-        time.sleep(0.5)
-
-    # Wait for the audio file to finish (optional)
     audio.wait(file_id, 0)
 
 # Execute the dance routine
