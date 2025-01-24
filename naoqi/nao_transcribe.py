@@ -19,7 +19,7 @@ LOCAL_FILE = "./speech.wav"
 API_URL = "http://127.0.0.1:5000/chat" 
 
 RMS_THRESHOLD = 700  
-SILENCE_THRESHOLD = 3 
+SILENCE_THRESHOLD = 5 
 
 
 def detect_and_record_speech(audio_recorder, audio_device):
