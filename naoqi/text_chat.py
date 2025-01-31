@@ -19,8 +19,8 @@ def get_response_from_chatgpt(user_input):
 
 def main():
 
-    print("ChatGPT Terminal Interface")
-    print("Type your question below. Type 'exit' to quit.")
+    print("ChatGPT Terminal Interface\n")
+    print("Type your question below. Type 'exit' to quit.\n")
     
     while True:
         user_input = raw_input("You: ") 

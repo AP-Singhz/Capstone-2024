@@ -22,11 +22,11 @@ def load_known_faces():
             data = json.load(file)
             known_face_encodings = [np.array(encoding) for encoding in data["encodings"]]
             known_face_names = data["names"]
-            print("Loaded {} known faces.".format(len(known_face_names)))
+            print("Loaded {} known faces.".format(len(known_face_names)) + "\n")
     except FileNotFoundError:
-        print("No registered users found. Starting with an empty file.")
+        print("No registered users found. Starting with an empty file.\n")
     except Exception as e:
-        print("Error loading known faces:", e)
+        print("Error loading known faces:", e + "\n")
 
 def save_known_faces():
     """Save known face encodings and names to a file."""
@@ -37,9 +37,9 @@ def save_known_faces():
         }
         with open(USER_DATA_FILE, "w") as file:
             json.dump(data, file)
-        print("Known faces saved.")
+        print("Known faces saved.\n")
     except Exception as e:
-        print("Error saving known faces:", e)
+        print("Error saving known faces:", e + "\n")
 
 
 # @app.route("/recognize", methods=["POST"])
@@ -101,7 +101,7 @@ def recognize_faces():
         return jsonify({"faces": results})
 
     except Exception as e:
-        print("Error:", e)
+        print("Error:", e + "\n")
         return jsonify({"error": str(e)}), 500
     
 
@@ -129,7 +129,7 @@ def register_face():
         return jsonify({"message": "User '{}' registered successfully.".format(name)})
 
     except Exception as e:
-        print("Error during registration:", e)
+        print("Error during registration:", e + "\n")
         return jsonify({"error": str(e)}), 500
 
 
