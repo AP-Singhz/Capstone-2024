@@ -19,7 +19,7 @@ LOCAL_FILE = "./speech.wav"
 API_URL = "http://127.0.0.1:5000/chat" 
 
 RMS_THRESHOLD = 700  
-SILENCE_THRESHOLD = 5 
+SILENCE_THRESHOLD = 4 
 
 
 def wait_for_speech_to_finish(tts):
@@ -41,16 +41,17 @@ def wait_for_speech_to_finish(tts):
             break
 
 def detect_and_record_speech(audio_recorder, audio_device):
-    
     try:
+        system = ALProxy("ALSystem", ROBOT_IP, ROBOT_PORT)    
+
         print("Listening for speech...\n")
         silent_time = 0
         is_recording = False
 
         while True:
             rms = audio_device.getFrontMicEnergy()
-            # if rms > RMS_THRESHOLD and not is_recording:
             print("Speech detected! Starting recording...\n")
+            system.system(f"rm -f {REMOTE_FILE}")    # delete old wav files to avoid file curruption or pulling old stale data
             try:
                 audio_recorder.startMicrophonesRecording(
                     REMOTE_FILE, "wav", 16000, [0, 0, 1, 0]
@@ -63,17 +64,18 @@ def detect_and_record_speech(audio_recorder, audio_device):
             while is_recording:
                 rms = audio_device.getFrontMicEnergy()
                 if rms < RMS_THRESHOLD:
-                    silent_time += 1  # increment silence timer
+                    silent_time += 1 # increment silence timer
                 else:
                     silent_time = 0  
 
                 if silent_time >= SILENCE_THRESHOLD:  # stops after silence threshold
                     print("Silence detected, stopping recording...\n")
                     audio_recorder.stopMicrophonesRecording()
+                    time.sleep(0.5)                      
                     is_recording = False
                     return
 
-                    time.sleep(1)  # check the mic energy every second
+                time.sleep(1) # delay for 1 second
     except Exception as e:
         print("Error during recording:{}".format(e) + "\n")
 
