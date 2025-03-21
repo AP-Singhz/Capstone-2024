@@ -7,7 +7,7 @@ PORT = 9559
 motion = ALProxy("ALMotion", ROBOT_IP, PORT)
 audio = ALProxy("ALAudioPlayer", ROBOT_IP, PORT)
 
-AUDIO_FILE_PATH = "/home/nao/audio/macarena.mp3" # Replace with the actual path on NAO
+AUDIO_FILE_PATH = "/home/nao/audio/macarena.mp3" # Replace with the actual path on NAO (NEED TO CHANGE .MP3 FILE)
 
 # Define motion keyframes
 names = list()
