@@ -7,7 +7,6 @@ PORT = 9559
 motion = ALProxy("ALMotion", ROBOT_IP, PORT)
 audio = ALProxy("ALAudioPlayer", ROBOT_IP, PORT)
 
-
 AUDIO_FILE_PATH = "/home/nao/audio/macarena.mp3"  # Replace with the actual path on NAO
 
 # Define motion keyframes
@@ -17,7 +16,7 @@ keys = list()
 
 file_id = audio.post.playFile(AUDIO_FILE_PATH)
 
-
+# Motion keyframes for Macarena
 names.append("HeadPitch")
 times.append([0.96, 1.92, 2.72, 3.44, 4.12, 5.04, 5.88, 6.48, 7.08, 7.6, 8.32, 9.04, 10.36, 11.64, 12.72, 13.6, 14.36, 15.08, 15.96, 17.24])
 keys.append([-0.237812, -0.00617791, 0.0643861, 0.0643861, 0.0643861, 0.0643861, 0.0643861, 0.153358, 0.153358, -0.190258, -0.104354, -0.285367, 0.00609397, 0.138018, 0.222388, 0.222388, 0.0735901, 0.294486, -0.227074, -0.237812])
@@ -128,4 +127,3 @@ motion.angleInterpolation(names, keys, times, True)
 print("Motion executed successfully!")
 
 audio.stop(file_id)
-
