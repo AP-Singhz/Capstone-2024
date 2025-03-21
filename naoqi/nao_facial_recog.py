@@ -4,6 +4,10 @@ from naoqi import ALProxy
 import requests
 from nao_transcribe import detect_and_record_speech, transcribe_audio, transfer_file,wait_for_speech_to_finish
 
+import threading
+GREETED_USERS = set()
+GREETED_USERS_LOCK = threading.Lock()
+
 # NAO Configuration
 ROBOT_IP = "172.20.10.6"  # Replace with your NAO robot's IP
 ROBOT_PORT = 9559
@@ -99,10 +103,17 @@ def handle_recognition_results(results):
                 tts.say("I didn't get your name. Please try later.")
         else:
             tts.say("Alright, maybe next time")
+    # else:
+    #     for name in results:
+    #         tts.say("Hello, {}! Welcome back.".format(name))
+    #         wait_for_speech_to_finish(tts)
     else:
-        for name in results:
-            tts.say("Hello, {}! Welcome back.".format(name))
-            wait_for_speech_to_finish(tts)
+        with GREETED_USERS_LOCK:
+            for name in results:
+                if name not in GREETED_USERS:
+                    tts.say("Hello, {}! Welcome back.".format(name))
+                    wait_for_speech_to_finish(tts)
+                    GREETED_USERS.add(name)
 
 
 def register_user(name ="New user"):

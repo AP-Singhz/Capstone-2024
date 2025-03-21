@@ -12,7 +12,8 @@ from nao_transcribe import (
 import threading
 from chat import detect_wake_word
 import time
-from nao_facial_recog import stream_frames_and_recognize, handle_recognition_results, register_user
+#from nao_facial_recog import stream_frames_and_recognize, handle_recognition_results, register_user
+from nao_facial_recog import stream_frames_and_recognize, handle_recognition_results, register_user, GREETED_USERS, GREETED_USERS_LOCK
 
 # Configuration
 ROBOT_IP = "172.20.10.6"  # Replace with your NAO robot's IP
@@ -101,26 +102,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
