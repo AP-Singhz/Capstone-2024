@@ -142,21 +142,21 @@ def register_user(name ="New user"):
         #     b'\x00\x00\x00...'  # raw image data as a byte array
         # )
 
-            #Extract image properties
-            width = frame_data[0]
-            height = frame_data[1]  
-            array = frame_data[6]
-            frame = np.frombuffer(array, dtype=np.uint8).reshape((height, width, 3)) # 3 color channels rgb
+        #Extract image properties
+        width = frame_data[0]
+        height = frame_data[1]  
+        array = frame_data[6]
+        frame = np.frombuffer(array, dtype=np.uint8).reshape((height, width, 3)) # 3 color channels rgb
 
-             # Convert to JPEG for transmission
-            _, encoded_frame = cv2.imencode(".jpg", frame)
+            # Convert to JPEG for transmission
+        _, encoded_frame = cv2.imencode(".jpg", frame)
 
-           # Send frame and name to the Flask API
-            response = requests.post(
-            "{}/register".format(PYTHON3_API_URL),
-            files={"frame": encoded_frame.tobytes()},
-            data={"name": name},
-            )
+        # Send frame and name to the Flask API
+        response = requests.post(
+        "{}/register".format(PYTHON3_API_URL),
+        files={"frame": encoded_frame.tobytes()},
+        data={"name": name},
+        )
 
         if response.status_code == 200:
             print("User registered successfully: {}".format(response.json()["message"]) + "\n")
