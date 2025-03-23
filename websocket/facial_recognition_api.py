@@ -1,4 +1,3 @@
-
 from flask import Flask, request, jsonify
 import cv2
 import numpy as np
@@ -7,68 +6,41 @@ import json
 
 app = Flask(__name__)
 
-#File to save registered users
+# File to save registered users
 USER_DATA_FILE = "registered_users.json"
+users = []  # Global list to store user data
 
-# Known face encodings and names
-known_face_encodings = []
-known_face_names = []
 
 def load_known_faces():
     """Load known face encodings and names from a file."""
-    global known_face_encodings, known_face_names
+    global users
     try:
         with open(USER_DATA_FILE, "r") as file:
             data = json.load(file)
-            known_face_encodings = [np.array(encoding) for encoding in data["encodings"]]
-            known_face_names = data["names"]
-            print("Loaded {} known faces.".format(len(known_face_names)) + "\n")
+            # Convert face encodings back to NumPy arrays
+            users = [{"name": user["name"], "encoding": np.array(user["encoding"])} for user in data]
+            print("Loaded {} known faces.".format(len(users)))
     except FileNotFoundError:
-        print("No registered users found. Starting with an empty file.\n")
+        print("No registered users found. Starting with an empty file.")
+        users = []
+    except json.JSONDecodeError:
+        print("Error: Invalid JSON format in {}. Starting with an empty list.".format(USER_DATA_FILE))
+        users = []
     except Exception as e:
-        print("Error loading known faces:", e + "\n")
+        print("Error loading known faces:", e)
+        users = []
+
 
 def save_known_faces():
     """Save known face encodings and names to a file."""
     try:
-        data = {
-            "encodings": [encoding.tolist() for encoding in known_face_encodings],
-            "names": known_face_names,
-        }
+        # Convert NumPy arrays to lists for JSON serialization
+        data = [{"name": user["name"], "encoding": user["encoding"].tolist()} for user in users]
         with open(USER_DATA_FILE, "w") as file:
             json.dump(data, file)
-        print("Known faces saved.\n")
+        print("Known faces saved.")
     except Exception as e:
-        print("Error saving known faces:", e + "\n")
-
-
-# @app.route("/recognize", methods=["POST"])
-# def recognize_faces():
-#     try:
-#         # Decode the received frame
-#         file = request.files["frame"]
-#         np_frame = np.frombuffer(file.read(), np.uint8)
-#         frame = cv2.imdecode(np_frame, cv2.IMREAD_COLOR)
-
-#         # Detect faces
-#         face_locations = face_recognition.face_locations(frame)
-#         face_encodings = face_recognition.face_encodings(frame, face_locations)
-        
-#         recognition_results = []
-#         for face_encoding in face_encodings:
-#             matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
-#             name = "Unknown"
-#             if True in matches:
-#                 first_match_index = matches.index(True)
-#                 name = known_face_names[first_match_index]
-
-#             recognition_results.append(name)
-
-#         return jsonify({"recognized_faces": recognition_results})
-
-#     except Exception as e:
-#         print("Error:", e)
-#         return jsonify({"error": str(e)}), 500
+        print("Error saving known faces:", e)
 
 
 @app.route("/recognize", methods=["POST"])
@@ -86,30 +58,37 @@ def recognize_faces():
 
         results = []
         for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
-            matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
             name = "Unknown"
-            if True in matches:
-                first_match_index = matches.index(True)
-                name = known_face_names[first_match_index]
+            # Compare face encodings with a stricter tolerance
+            matches = [
+                face_recognition.compare_faces([user["encoding"]], face_encoding, tolerance=0.4)
+                for user in users
+            ]
+
+            # Find the first match
+            for i, match in enumerate(matches):
+                if True in match:
+                    name = users[i]["name"]
+                    break
 
             # Add face location and name to results
-            results.append({
-                "name": name,
-                "location": [top, right, bottom, left]
-            })
+            results.append({"name": name, "location": [top, right, bottom, left]})
 
         return jsonify({"faces": results})
 
     except Exception as e:
-        print("Error:", e + "\n")
+        print("Error during face recognition:", e)
         return jsonify({"error": str(e)}), 500
-    
+
 
 @app.route("/register", methods=["POST"])
 def register_face():
     """Register a new face with a name."""
     try:
         name = request.form.get("name")
+        if not name:
+            return jsonify({"error": "Name is required for registration."}), 400
+
         file = request.files["frame"]
         np_frame = np.frombuffer(file.read(), np.uint8)
         frame = cv2.imdecode(np_frame, cv2.IMREAD_COLOR)
@@ -121,15 +100,18 @@ def register_face():
 
         face_encoding = face_recognition.face_encodings(frame, face_locations)[0]
 
+        # Check for duplicate names
+        if any(user["name"] == name for user in users):
+            return jsonify({"error": "A user with this name already exists."}), 400
+
         # Add the new face encoding and name
-        known_face_encodings.append(face_encoding)
-        known_face_names.append(name)
+        users.append({"name": name, "encoding": face_encoding})
         save_known_faces()
 
         return jsonify({"message": "User '{}' registered successfully.".format(name)})
 
     except Exception as e:
-        print("Error during registration:", e + "\n")
+        print("Error during registration:", e)
         return jsonify({"error": str(e)}), 500
 
 
