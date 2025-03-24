@@ -4,7 +4,9 @@ import time
 # List of wake words
 WAKE_WORDS = ["hey nao", "hello nao", "hey now", "hello now", "hello no", "hey no"]
 
-def detect_wake_word_speech(robot_ip, robot_port=9559, wake_words=None):
+ROBOT_IP = "172.20.10.6"  # Your constant robot IP
+
+def detect_wake_word_speech(robot_ip=ROBOT_IP, robot_port=9559, wake_words=None):
     """
     Listens for one of the specified wake words using ALSpeechRecognition.
     Returns True as soon as a wake word is detected.

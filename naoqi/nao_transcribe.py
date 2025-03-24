@@ -16,7 +16,7 @@ REMOTE_FILE = "/home/nao/recordings/audio/speech.wav"
 CLEANED_FILE = "./cleaned_speech.wav"
 LOCAL_FILE = "./speech.wav"
 
-API_URL = "http://127.0.0.1:5000/chat" 
+API_URL = "http://127.0.0.1:5001/chat" 
 
 RMS_THRESHOLD = 700  
 SILENCE_THRESHOLD = 4
