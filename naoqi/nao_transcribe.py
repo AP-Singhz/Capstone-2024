@@ -40,6 +40,22 @@ def wait_for_speech_to_finish(tts):
             print("Error checking TextDone event:".format(e) + "\n")
             break
 
+
+def remove_old_remote_file():
+    try:
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh.connect(ROBOT_IP, username=USERNAME, password=PASSWORD)
+        # Execute the command to remove the file
+        stdin, stdout, stderr = ssh.exec_command("rm -f {}".format(REMOTE_FILE))
+        # Wait for the command to complete
+        stdout.channel.recv_exit_status()
+        ssh.close()
+        print("Old remote file removed successfully.")
+    except Exception as e:
+        print("Error removing remote file: {}".format(e))
+
+
 def detect_and_record_speech(audio_recorder, audio_device):
     try:
         system = ALProxy("ALSystem", ROBOT_IP, ROBOT_PORT)    
@@ -51,7 +67,8 @@ def detect_and_record_speech(audio_recorder, audio_device):
         while True:
             rms = audio_device.getFrontMicEnergy()
             print("Speech detected! Starting recording...\n")
-            system.system(f"rm -f {REMOTE_FILE}")    # delete old wav files to avoid file curruption or pulling old stale data
+            remove_old_remote_file()  # Remove the stale file
+               # delete old wav files to avoid file curruption or pulling old stale data
             try:
                 audio_recorder.startMicrophonesRecording(
                     REMOTE_FILE, "wav", 16000, [0, 0, 1, 0]
