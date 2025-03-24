@@ -10,7 +10,9 @@ from nao_transcribe import (
     wait_for_speech_to_finish
 )
 import threading
-from chat import detect_wake_word
+#from chat import detect_wake_word
+from speech import detect_wake_word_speech
+
 import time
 #from nao_facial_recog import stream_frames_and_recognize, handle_recognition_results, register_user
 from nao_facial_recog import stream_frames_and_recognize, handle_recognition_results, register_user, GREETED_USERS, GREETED_USERS_LOCK
@@ -30,7 +32,7 @@ def listen_for_wake_word():
     
     while True:
         # Step 1: Detect wake word
-        if detect_wake_word():
+        if detect_wake_word_speech():
             print("Wake word detected!\n")
             wake_word_detected.set()  # Set the flag to indicate wake word detected
             audio_tts.say("How can I help you?")
