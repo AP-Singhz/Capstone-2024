@@ -19,7 +19,7 @@ LOCAL_FILE = "./speech.wav"
 API_URL = "http://127.0.0.1:5000/chat" 
 
 RMS_THRESHOLD = 700  
-SILENCE_THRESHOLD = 4 
+SILENCE_THRESHOLD = 4
 
 
 def wait_for_speech_to_finish(tts):
@@ -59,16 +59,17 @@ def remove_old_remote_file():
 def detect_and_record_speech(audio_recorder, audio_device):
     try:
         system = ALProxy("ALSystem", ROBOT_IP, ROBOT_PORT)    
-
+        remove_old_remote_file()
         print("Listening for speech...\n")
         silent_time = 0
         is_recording = False
-
+        tts = ALProxy("ALTextToSpeech", ROBOT_IP, ROBOT_PORT)
         while True:
             rms = audio_device.getFrontMicEnergy()
             print("Speech detected! Starting recording...\n")
-            remove_old_remote_file()  # Remove the stale file
+              # Remove the stale file
                # delete old wav files to avoid file curruption or pulling old stale data
+            #wait_for_speech_to_finish(tts)
             try:
                 audio_recorder.startMicrophonesRecording(
                     REMOTE_FILE, "wav", 16000, [0, 0, 1, 0]
@@ -161,33 +162,50 @@ def preprocess_audio(input_file, output_file):
 #         return None
 
 
+# def transcribe_audio():
+#     """Transcribe the audio file located at LOCAL_FILE."""
+#     recognizer = sr.Recognizer()
+
+#     # Preprocess the audio file
+#     preprocessed_file = preprocess_audio(LOCAL_FILE, CLEANED_FILE)
+#     if not preprocessed_file:
+#         print("Error preprocessing the audio file.\n")
+#         return None
+
+#     try:
+#         with sr.AudioFile(preprocessed_file) as source:
+#             recognizer.adjust_for_ambient_noise(source)  # Adjust threshold for ambient noise
+#             audio_data = recognizer.record(source)
+#         print("Transcribing audio...\n")
+#         text = recognizer.recognize_google(audio_data)
+#         print("Transcription:{}" .format(text) + "\n")
+#         return text
+#     except sr.UnknownValueError:
+#         print("Speech recognition could not understand the audio.\n")
+#         return None
+#     except sr.RequestError as e:
+#         print("Error with the speech recognition service:{}" .format(e) + "\n")
+#         return None
+#     except Exception as e:
+#         print("Unexpected error during transcription:{}" .format(e) + "\n")
+#         return None
+
 def transcribe_audio():
-    """Transcribe the audio file located at LOCAL_FILE."""
-    recognizer = sr.Recognizer()
-
-    # Preprocess the audio file
-    preprocessed_file = preprocess_audio(LOCAL_FILE, CLEANED_FILE)
-    if not preprocessed_file:
-        print("Error preprocessing the audio file.\n")
-        return None
-
     try:
-        with sr.AudioFile(preprocessed_file) as source:
-            recognizer.adjust_for_ambient_noise(source)  # Adjust threshold for ambient noise
+        recognizer = sr.Recognizer()
+        with sr.AudioFile(LOCAL_FILE) as source:
             audio_data = recognizer.record(source)
-        print("Transcribing audio...\n")
-        text = recognizer.recognize_google(audio_data)
-        print("Transcription:{}" .format(text) + "\n")
-        return text
+        print("Transcribing audio...")
+        transcription = recognizer.recognize_google(audio_data)
+        print("Transcription:", transcription)
+        return transcription
     except sr.UnknownValueError:
-        print("Speech recognition could not understand the audio.\n")
+        print("Could not understand the audio.")
         return None
     except sr.RequestError as e:
-        print("Error with the speech recognition service:{}" .format(e) + "\n")
+        print("Error with the speech recognition service:", e)
         return None
-    except Exception as e:
-        print("Unexpected error during transcription:{}" .format(e) + "\n")
-        return None
+
 
 
 def send_to_flask_api(user_input):

@@ -21,7 +21,11 @@ def stream_frames_and_recognize():
     video_client = video_proxy.subscribeCamera(
         "python_client", 0, RESOLUTION, 11, FRAME_RATE
     )
-
+    posture = ALProxy("ALRobotPosture", ROBOT_IP, ROBOT_PORT)
+    motion = ALProxy("ALMotion", ROBOT_IP, ROBOT_PORT)
+    posture.goToPosture("StandInit", 1.0)
+    posture.goToPosture("Stand", 1.0)
+    motion.setAngles("HeadPitch", -0.2, 0.5)
     try:
         print("Streaming frames to Python 3 API... Press 'q' to exit.\n")
         while True:
@@ -74,7 +78,8 @@ def handle_recognition_results(results):
     tts = ALProxy("ALTextToSpeech", ROBOT_IP, ROBOT_PORT)
     if "Unknown" in results:
         tts.say("Hello! I don't recognize you. Would you like to register?")
-        wait_for_speech_to_finish(tts)
+        
+        print("Called detect_and_record...\n")
         # Get user response
         detect_and_record_speech(audio_recorder=ALProxy("ALAudioRecorder", ROBOT_IP, ROBOT_PORT),
                                  audio_device=ALProxy("ALAudioDevice", ROBOT_IP, ROBOT_PORT))
@@ -107,13 +112,13 @@ def handle_recognition_results(results):
     #     for name in results:
     #         tts.say("Hello, {}! Welcome back.".format(name))
     #         wait_for_speech_to_finish(tts)
-    else:
-        with GREETED_USERS_LOCK:
-            for name in results:
-                if name not in GREETED_USERS:
-                    tts.say("Hello, {}! Welcome back.".format(name))
-                    wait_for_speech_to_finish(tts)
-                    GREETED_USERS.add(name)
+    # else:
+    #     with GREETED_USERS_LOCK:
+    #         for name in results:
+    #             if name not in GREETED_USERS:
+    #                 tts.say("Hello, {}! Welcome back.".format(name))
+    #                 wait_for_speech_to_finish(tts)
+    #                 GREETED_USERS.add(name)
 
 
 def register_user(name ="New user"):
