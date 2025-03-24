@@ -92,7 +92,7 @@ def handle_recognition_results(results):
         if user_res and user_res.lower() in ["yes", "yeah", "yup", "sure", "ok", "okay", "please", "yeah sure",
                                              "yes please", "yes sure", "yes okay", "yeah okay"]:
             tts.say("Great! What is your name.")
-            wait_for_speech_to_finish(tts)
+            #wait_for_speech_to_finish(tts)
             detect_and_record_speech(audio_recorder=ALProxy("ALAudioRecorder", ROBOT_IP, ROBOT_PORT),
                                      audio_device=ALProxy("ALAudioDevice", ROBOT_IP, ROBOT_PORT))
             print("Listen for user's name...\n")
