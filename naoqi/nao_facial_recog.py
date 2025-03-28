@@ -3,20 +3,20 @@ import numpy as np
 from naoqi import ALProxy
 import requests
 from nao_transcribe import detect_and_record_speech, transcribe_audio, transfer_file,wait_for_speech_to_finish
-
+import time
 import threading
 GREETED_USERS = set()
 GREETED_USERS_LOCK = threading.Lock()
 
 # NAO Configuration
-ROBOT_IP = "172.20.10.6"  # Replace with your NAO robot's IP
+ROBOT_IP = "172.20.10.2"  # Replace with your NAO robot's IP
 ROBOT_PORT = 9559
 RESOLUTION = 2  # 640x480 resolution
 FRAME_RATE = 60
 PYTHON3_API_URL = "http://127.0.0.1:5000"  # Python 3 Flask API URL
 
 
-def stream_frames_and_recognize():
+def stream_frames_and_recognize(facial_recog_done):
     video_proxy = ALProxy("ALVideoDevice", ROBOT_IP, ROBOT_PORT)
     video_client = video_proxy.subscribeCamera(
         "python_client", 0, RESOLUTION, 11, FRAME_RATE
@@ -28,7 +28,14 @@ def stream_frames_and_recognize():
     motion.setAngles("HeadPitch", -0.2, 0.5)
     try:
         print("Streaming frames to Python 3 API... Press 'q' to exit.\n")
+
         while True:
+
+             # Only process frames if facial recognition is not busy
+            if not facial_recog_done.is_set():
+                time.sleep(0.1)
+                continue
+
             frame_data = video_proxy.getImageRemote(video_client)
             if frame_data is None:
                 continue
@@ -54,7 +61,7 @@ def stream_frames_and_recognize():
                     cv2.putText(frame, name, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
 
                 # Robot interaction
-                handle_recognition_results([face["name"] for face in recognized_faces])
+                handle_recognition_results([face["name"] for face in recognized_faces], facial_recog_done)
             else:
                 print("Error in registration response: {}".format(response.text) + "\n")
 
@@ -71,12 +78,13 @@ def stream_frames_and_recognize():
         video_proxy.unsubscribe(video_client)
         cv2.destroyAllWindows()
 
-def handle_recognition_results(results):
+def handle_recognition_results(results,facial_recog_done):
     """
     Process recognition results and interact with the user.
     """
     tts = ALProxy("ALTextToSpeech", ROBOT_IP, ROBOT_PORT)
     if "Unknown" in results:
+        facial_recog_done.clear()  
         tts.say("Hello! I don't recognize you. Would you like to register?")
         
         print("Called detect_and_record...\n")
@@ -108,17 +116,20 @@ def handle_recognition_results(results):
                 tts.say("I didn't get your name. Please try later.")
         else:
             tts.say("Alright, maybe next time")
+        
+        # Registration (or the registration attempt) is complete, so facial recognition is free again.
+        facial_recog_done.set()
     # else:
     #     for name in results:
     #         tts.say("Hello, {}! Welcome back.".format(name))
     #         wait_for_speech_to_finish(tts)
-    # else:
-    #     with GREETED_USERS_LOCK:
-    #         for name in results:
-    #             if name not in GREETED_USERS:
-    #                 tts.say("Hello, {}! Welcome back.".format(name))
-    #                 wait_for_speech_to_finish(tts)
-    #                 GREETED_USERS.add(name)
+    else:
+        with GREETED_USERS_LOCK:
+            for name in results:
+                if name not in GREETED_USERS:
+                    tts.say("Hello, {}! Welcome back.".format(name))
+                    wait_for_speech_to_finish(tts)
+                    GREETED_USERS.add(name)
 
 
 def register_user(name ="New user"):
@@ -176,4 +187,7 @@ def register_user(name ="New user"):
         video_proxy.unsubscribe(video_client)
 
 if __name__ == "__main__":
-    stream_frames_and_recognize()
+    #stream_frames_and_recognize()
+    facial_recog_done = threading.Event()
+    facial_recog_done.set()  # Mark that facial recognition is initially free
+    stream_frames_and_recognize(facial_recog_done)

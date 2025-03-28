@@ -18,11 +18,18 @@ import time
 from nao_facial_recog import stream_frames_and_recognize, handle_recognition_results, register_user, GREETED_USERS, GREETED_USERS_LOCK
 
 # Configuration
-ROBOT_IP = "172.20.10.6"  # Replace with your NAO robot's IP
+ROBOT_IP = "172.20.10.2"  # Replace with your NAO robot's IP
 ROBOT_PORT = 9559
 LOCAL_FILE = "./speech.wav"
 
 wake_word_detected = threading.Event()
+# Global lock for audio operations
+audio_lock = threading.Lock()
+gpt_response_done = threading.Event()
+facial_recog_done = threading.Event()
+
+gpt_response_done.set()  # Initially, no GPT response is in progress.
+facial_recog_done.set()  
 
 def listen_for_wake_word():
 
@@ -33,53 +40,57 @@ def listen_for_wake_word():
     while True:
         # Step 1: Detect wake word
         if detect_wake_word_speech():
-            print("Wake word detected!\n")
-            wake_word_detected.set()  # Set the flag to indicate wake word detected
-            audio_tts.say("How can I help you?")
-            wait_for_speech_to_finish(audio_tts)
-            
-            # Step 2: Record Speech dynamically
-            print("Listening for you question\n")
-            detect_and_record_speech(audio_recorder, audio_device)
-            print("Recording complete. File saved: {} " .format(LOCAL_FILE) + "\n")
-
-            # Step 3: Transfer file from NAO to local system
-            print("Transferring file from NAO to local system...\n")
-            transfer_file()  # Call the existing function directly
-            print("File transfer complete.\n")
-            
-            # Step 4: Transcribe audio
-            question = transcribe_audio()
-            if question:
-                print("User asked:{}" .format(question) + "\n")
-
-                # Step 5: Send transcription to GPT and get a response
-                response = send_to_flask_api(question)
-                if response:
-                    print("GPT Response: {}".format(response) + "\n")
-                    # Step6: Speak the GPT response
-                    speak_response(audio_tts, response)
-                    wait_for_speech_to_finish(audio_tts)
-                else:
-                    audio_tts.say("I couldn't get a response.")
-                    wait_for_speech_to_finish(audio_tts)
-            else:
-                audio_tts.say("I couldn't understand you. Please try again.")
+            with audio_lock:
+                print("Wake word detected!\n")
+                wake_word_detected.set()  # Set the flag to indicate wake word detected
+                gpt_response_done.clear()  # Mark that we're processing a GPT response.
+                audio_tts.say("How can I help you?")
                 wait_for_speech_to_finish(audio_tts)
-            
-            wake_word_detected.clear() # reset the flag after the task
+                
+                # Step 2: Record Speech dynamically
+                print("Listening for you question\n")
+                detect_and_record_speech(audio_recorder, audio_device)
+                print("Recording complete. File saved: {} " .format(LOCAL_FILE) + "\n")
+
+                # Step 3: Transfer file from NAO to local system
+                print("Transferring file from NAO to local system...\n")
+                transfer_file()  # Call the existing function directly
+                print("File transfer complete.\n")
+                
+                # Step 4: Transcribe audio
+                question = transcribe_audio()
+                if question:
+                    print("User asked:{}" .format(question) + "\n")
+
+                    # Step 5: Send transcription to GPT and get a response
+                    response = send_to_flask_api(question)
+                    if response:
+                        print("GPT Response: {}".format(response) + "\n")
+                        # Step6: Speak the GPT response
+                        speak_response(audio_tts, response)
+                        wait_for_speech_to_finish(audio_tts)
+                    else:
+                        audio_tts.say("I couldn't get a response.")
+                        wait_for_speech_to_finish(audio_tts)
+                else:
+                    audio_tts.say("I couldn't understand you. Please try again.")
+                    wait_for_speech_to_finish(audio_tts)
+                
+                # Mark GPT response as complete and allow facial recognition to resume.
+                gpt_response_done.set()
+                wake_word_detected.clear() # reset the flag after the task
         
         else:
-            threading.Event().wait(0.1)  # Wait for 0.1 seconds before checking again, short delay prevent CPU overuse
+            threading.Event().wait(2)  # Wait for 0.1 seconds before checking again, short delay prevent CPU overuse
 
 
 def run_facial_recognition():
     while True:
-        if not wake_word_detected.is_set():
-            stream_frames_and_recognize() #Run facial recog logic
+        if (not wake_word_detected.is_set() and gpt_response_done.is_set() and  facial_recog_done.is_set()):
+            stream_frames_and_recognize(facial_recog_done) #Run facial recog logic
         else:
             print("Pausing facial recognition...\n")
-            threading.Event().wait(0.1) # Wait for 100ms to allow wake word to take priority
+            threading.Event().wait(2) # Wait for 100ms to allow wake word to take priority
 
 def main():
     print("Nao ready and listening...\n")
@@ -104,69 +115,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
-# from naoqi import ALProxy
-# from nao_transcribe import detect_and_record_speech, transcribe_audio, send_to_flask_api ,speak_response , transfer_file
-# from chat import detect_wake_word
-# import time
-
-
-# # Configuration
-# ROBOT_IP = "172.20.10.6"  # Replace with your NAO robot's IP
-# ROBOT_PORT = 9559
-# LOCAL_FILE = "./speech.wav"
-# def main():
-#     print("NAO is ready and listening...")
-#     audio_recorder = ALProxy("ALAudioRecorder", ROBOT_IP, ROBOT_PORT)
-#     audio_device = ALProxy("ALAudioDevice",ROBOT_IP,ROBOT_PORT)
-#     audio_tts = ALProxy("ALTextToSpeech", ROBOT_IP, ROBOT_PORT)
-#     audio_tts.setParameter("blockUntilSayFinished", True) # Ensure TTS(NAO) is finsihed speaking before proceding
-#     while True:
-#         # Step 1: Detect wake word
-#         if detect_wake_word():
-#             print("Wake word detected!")
-#             audio_tts.say("How can I help you?")
-
-#             # Step 2: Record audio
-#             # print("Recording question...")
-#             # audio_recorder.startMicrophonesRecording(
-#             #     "./speech.wav", "wav", 16000, [0, 0, 1, 0]
-#             # )
-#             #time.sleep(5)  # Record for 5 seconds
-#             #audio_recorder.stopMicrophonesRecording()
-#             #print("Recording complete.")
-
-#             # Step 2: Record Speech dynamically
-#             print("Listening for you question")
-#             detect_and_record_speech(audio_recorder, audio_device)
-#             print("Recording complete. File saved: {} " .format(LOCAL_FILE))
-
-#             # Step 3: Transfer file from NAO to local system
-#             print("Transferring file from NAO to local system...")
-#             transfer_file()  # Call the existing function directly
-#             print("File transfer complete.")
-            
-#             # Step 4: Transcribe audio
-#             question = transcribe_audio()
-#             if question:
-#                 print("User asked:{}" .format(question))
-
-#                 # Step 5: Send transcription to GPT and get a response
-#                 response = send_to_flask_api(question)
-#                 if response:
-#                     print("GPT Response: {}".format(response))
-#                     # Step6: Speak the GPT response
-#                     speak_response(audio_tts, response)
-#                 else:
-#                     audio_tts.say("I couldn't get a response.")
-#             else:
-#                 audio_tts.say("I couldn't understand you. Please try again.")
-
-# if __name__ == "__main__":
-#     main()
-
-
-
 
