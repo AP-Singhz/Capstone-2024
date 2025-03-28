@@ -43,6 +43,7 @@ def wait_for_speech_to_finish(tts):
 
 def remove_old_remote_file():
     try:
+        #add code to remove if there is a file with that name already else don't do anything
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(ROBOT_IP, username=USERNAME, password=PASSWORD)
@@ -58,8 +59,9 @@ def remove_old_remote_file():
 
 def detect_and_record_speech(audio_recorder, audio_device):
     try:
-        system = ALProxy("ALSystem", ROBOT_IP, ROBOT_PORT)    
-        remove_old_remote_file()
+        system = ALProxy("ALSystem", ROBOT_IP, ROBOT_PORT)   
+        audio_recorder.stopMicrophonesRecording() 
+        #remove_old_remote_file()
         print("Listening for speech...\n")
         silent_time = 0
         is_recording = False
