@@ -31,6 +31,69 @@ facial_recog_done = threading.Event()
 gpt_response_done.set()  # Initially, no GPT response is in progress.
 facial_recog_done.set()  
 
+
+def do_song_and_dance_GPT(audio_tts, question):
+    """
+    Have NAO sing the GPT-generated song while dancing concurrently.
+    The dance routine (boogie) will stop when the singing is complete.
+    """
+
+    song = send_to_flask_api(question)
+    if not song:
+        audio_tts.say("I couldn't get a song response.")
+        wait_for_speech_to_finish(audio_tts)
+        return
+
+    print("\n Song and dance working!:", song)
+    
+    # Create an event to signal when dancing should stop.
+    dance_stop = threading.Event()
+    
+    # Define a function to run the dance routine which supports interruption.
+    def dance_routine():
+        from Dance1 import boogie
+        boogie(stop_event=dance_stop)
+    
+    # Start the dance routine concurrently.
+    dance_thread = threading.Thread(target=dance_routine)
+    dance_thread.start()
+    
+    # NAO sings the song.
+    speak_response(audio_tts, song)
+    wait_for_speech_to_finish(audio_tts)
+    
+    # Signal the dance routine to stop.
+    dance_stop.set()
+    dance_thread.join()
+
+# aaron needs to change a song 
+
+def play_RPS(audio_tts, response):
+    print("\n Rock Paper Scissors working!")
+    import betterRPS
+    betterRPS.main()
+def play_boogie(audio_tts, response):
+    print("\n Boogie working!")
+    from Dance1 import boogie
+    boogie()
+def play_macarena(audio_tts, response):
+    print("\n Macarena working!")
+    from Dance2 import macarena
+    macarena()
+def play_gangname_style(audio_tts, response):
+    print("\n Gangnam Style working!")
+    from Dance2 import gangnam_style
+    gangnam_style()
+
+gpt_command_functions = {
+    "song and dance": do_song_and_dance_GPT,
+    "rock paper scissors": play_RPS,
+    "boogie": play_boogie,
+    "macarena": play_macarena,
+    "gangnam style": play_gangname_style,
+
+}
+
 def listen_for_wake_word():
 
     audio_recorder = ALProxy("ALAudioRecorder", ROBOT_IP, ROBOT_PORT)
@@ -61,17 +124,23 @@ def listen_for_wake_word():
                 question = transcribe_audio()
                 if question:
                     print("User asked:{}" .format(question) + "\n")
+                    found_command = False
 
-                    # Step 5: Send transcription to GPT and get a response
-                    response = send_to_flask_api(question)
-                    if response:
-                        print("GPT Response: {}".format(response) + "\n")
-                        # Step6: Speak the GPT response
-                        speak_response(audio_tts, response)
-                        wait_for_speech_to_finish(audio_tts)
-                    else:
-                        audio_tts.say("I couldn't get a response.")
-                        wait_for_speech_to_finish(audio_tts)
+                    for command, func in gpt_command_functions.items():
+                        if command in question.lower():
+                            # Now pass the full question to the function.
+                            func(audio_tts, question)
+                            found_command = True
+                            break
+                    if not found_command:
+                        response = send_to_flask_api(question)
+                        if response:
+                            print("GPT response: {}" .format(response) + "\n")
+                            speak_response(audio_tts, response)
+                            wait_for_speech_to_finish(audio_tts)
+                        else:
+                            audio_tts.say("I couldn't get a response.")
+                            wait_for_speech_to_finish(audio_tts)
                 else:
                     audio_tts.say("I couldn't understand you. Please try again.")
                     wait_for_speech_to_finish(audio_tts)
