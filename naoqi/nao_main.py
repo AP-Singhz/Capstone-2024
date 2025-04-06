@@ -85,12 +85,27 @@ def play_gangname_style(audio_tts, response):
     from Dance2 import gangnam_style
     gangnam_style()
 
+def play_spotify(audio_tts, question):
+    print("\n Spotify feature working!")
+    # Prepend "spotify" to the question or format as needed.
+    spotify_command = "spotify " + question
+    response = send_to_flask_api(spotify_command, endpoint='/spotify')  # Adjust send_to_flask_api to accept an endpoint if needed
+    if response:
+        print("Spotify response: {}".format(response))
+        speak_response(audio_tts, response)
+        wait_for_speech_to_finish(audio_tts)
+    else:
+        audio_tts.say("I couldn't get a Spotify response.")
+        wait_for_speech_to_finish(audio_tts)
+
+
 gpt_command_functions = {
     "song and dance": do_song_and_dance_GPT,
     "rock paper scissors": play_RPS,
     "boogie": play_boogie,
     "macarena": play_macarena,
     "gangnam style": play_gangname_style,
+    "spotify": play_spotify,
 
 }
 
