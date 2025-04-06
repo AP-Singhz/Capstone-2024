@@ -3,6 +3,8 @@ import cv2
 import numpy as np
 import face_recognition
 import json
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
 
 app = Flask(__name__)
 
@@ -113,6 +115,34 @@ def register_face():
     except Exception as e:
         print("Error during registration:", e)
         return jsonify({"error": str(e)}), 500
+
+# Configure your Spotify credentials (make sure to set environment variables or hard-code for testing)
+sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id="YOUR_CLIENT_ID",
+                                               client_secret="YOUR_CLIENT_SECRET",
+                                               redirect_uri="YOUR_REDIRECT_URI",
+                                               scope="user-read-playback-state"))
+
+@app.route('/spotify',methods=["POST"])
+def spotify_command():
+    data = request.get_json()
+    command = data.get('command', '').lower()
+    
+    # Example: if the command includes a song search request.
+    if "search" in command:
+        # Extract the search query (e.g., "spotify search Imagine")
+        query = command.replace("spotify search", "").strip()
+        results = sp.search(q=query, type='track', limit=1)
+        if results and results['tracks']['items']:
+            track = results['tracks']['items'][0]
+            result_text = f"Found: {track['name']} by {track['artists'][0]['name']}"
+        else:
+            result_text = "No results found."
+    else:
+        result_text = "Spotify command not recognized."
+    
+    return jsonify({'result': result_text})
+
+
 
 
 if __name__ == "__main__":
